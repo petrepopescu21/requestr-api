@@ -1,0 +1,344 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "0.0.0.1",
+    "parameters": {
+        "vm-Array": {
+            "type": "object",
+            "metadata": {
+                "description": "Defines nested parameters for a single VM"
+            }
+        },
+        "utcValue": {
+            "type": "string",
+            "metadata": {
+                "description": "Used to generate a unique value for the deployment name"
+            },
+            "defaultValue": "[utcNow('yyyyMMddTHHmmssfff')]"
+        },
+        "vm-klAdminLocalPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Password for Kaspersky Admin Local"
+            }
+        },
+        "vm-buAdminLocalPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Password for BU Admin Local"
+            }
+        },
+        "vm-DomainAdminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Password for domain admin account"
+            }
+        },
+        "vm-MonitoringAdminLocalPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Password for monitoring admin account"
+            }
+        },
+        "vm-LinuxCustomScriptExtensionPath": {
+            "type": "string",
+            "metadata": {
+                "description": "Path to Custom Script Extension file"
+            },
+            "defaultValue": "https://euwesharedsvcstorage.blob.core.windows.net/scripts/Security_script_baseline_RHEL7.sh"
+        },
+        "vm-CustomScriptExtensionPath": {
+            "type": "string",
+            "metadata": {
+                "description": "Post-deployement script URL"
+            },
+            "defaultValue": "https://euwesharedsvcstorage.blob.core.windows.net/scripts/WindowsPostDeploymentScript.ps1"
+        },
+        "vm-AutomationAccountName": {
+            "type": "string",
+            "metadata": {
+                "description": "Automation account for DSC configuration"
+            }
+        },
+        "entity-Code": {
+            "type": "string",
+            "metadata": {
+                "Description": "Entity owning the VM"
+            }
+        },
+        "country-Code": {
+            "type": "string",
+            "metadata": {
+                "Description": "Country code owning the VM"
+            }
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "Description": "Localisation"
+            }
+        },
+        "vm-diagStorageResourceGroup": {
+            "type": "string",
+            "metadata": {
+                "Description": "ResourceGroup name of Diagnosis Storage Account"
+            }
+        },
+        "vm-diagStorageName": {
+            "type": "string",
+            "metadata": {
+                "Description": "Name of Diagnosis Storage Account"
+            }
+        },
+        "vm-vNetResourceGroup": {
+            "type": "string",
+            "metadata": {
+                "Description": "VNet Resource Group"
+            }
+        },
+        "vm-vNetName": {
+            "type": "string",
+            "metadata": {
+                "Description": "VNet hosting the VM"
+            }
+        },
+        "avSet-PlatformUpdateDomainCount": {
+            "type": "string",
+            "metadata": {
+                "description": "Update domain's number"
+            },
+            "defaultValue": "2"
+        },
+        "avSet-PlatformFaultDomainCount": {
+            "type": "string",
+            "metadata": {
+                "description": "Fault domain's number"
+            },
+            "defaultValue": "2"
+        },
+        "vault-Name": {
+            "type": "string",
+            "metadata": {
+                "description": "Recovery Vault Name"
+            }
+        },
+        "vault-PolicyName": {
+            "type": "string",
+            "metadata": {
+                "description": "Backup Policy Name"
+            },
+            "defaultValue": "VMDailyBackup"
+        },
+        "vault-RGName": {
+            "type": "string",
+            "metadata": {
+                "description": "Recovery Vault Resource Group Name"
+            }
+        },
+        "workspace-Name": {
+            "type": "string",
+            "metadata": {
+                "Description": "Log Analytics Workspace Name"
+            }
+        },
+        "workspace-SubId": {
+            "type": "string",
+            "metadata": {
+                "Description": "Log Analytics Workspace Subscription Id"
+            }
+        },
+        "workspace-ResourceGroup": {
+            "type": "string",
+            "metadata": {
+                "Description": "Log Analytics Workspace Resource Group"
+            }
+        },
+        "vm-ADCodeDomain": {
+            "type": "string",
+            "metadata": {
+                "Description": "Code for the AD Domain of the VM (w for workgroup)"
+            }
+        },
+        "sas-Token": {
+            "type": "string",
+            "metadata": {
+                "Description": "SAS Token for access to Nested templates"
+            }
+        },
+        "sas-URI": {
+            "type": "string",
+            "metadata": {
+                "Description": "SAS URI for access to Nested templates"
+            }
+        },
+        "vm-AvailabilityZone": {
+            "type": "string",
+            "metadata": {
+                "Description": "Availability Zone Number (0 if no AZ is required)"
+            },
+            "allowedValues": [
+                "0",
+                "1",
+                "2",
+                "3"
+            ],
+            "DefaultValue": "0"
+        },
+        "vm-DSCEnabled": {
+            "type": "string",
+            "metadata": {
+                "Description": "Create DSC extension for hardening"
+            },
+            "DefaultValue": "yes"
+        },
+        "type-Env": {
+            "type": "string",
+            "metadata": {
+                "Description": "Environment set by the Variable Group for generating Subnet name"
+            }
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2017-05-10",
+            "comments": "Generic VM Deployment",
+            "copy": {
+                "name": "iterator",
+                "count": "[length(parameters('vm-Array'))]"
+            },
+            "name": "[concat('vmDeployment-',parameters('vm-Array')[copyIndex()].Function,'-',parameters('vm-Array')[copyIndex()].Increment,'-', uniqueString(parameters('utcValue')))]",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(uri(parameters('sas-URI'),concat('/templates/',resourceGroup().name,'/VM-deploy.json')),parameters('sas-Token'))]"
+                },
+                "parameters": {
+                    "utcValue": {
+                        "value": "[parameters('utcValue')]"
+                    },
+                    "entity-Code": {
+                        "value": "[parameters('entity-Code')]"
+                    },
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "vm-diagStorageName": {
+                        "value": "[parameters('vm-diagStorageName')]"
+                    },
+                    "vm-diagStorageResourceGroup": {
+                        "value": "[parameters('vm-diagStorageResourceGroup')]"
+                    },
+                    "vm-vNetResourceGroup": {
+                        "value": "[parameters('vm-vNetResourceGroup')]"
+                    },
+                    "vm-vNetName": {
+                        "value": "[parameters('vm-vNetName')]"
+                    },
+                    "vm-SubnetName": {
+                        "value": "[concat(parameters('entity-Code'),'-',parameters('type-Env'),'-',parameters('vm-Array')[copyIndex()].SubnetCode,'-subnet')]"
+                    },
+                    "vm-adminPasswordOrSSHKey": {
+                        "value": "[parameters('vm-Array')[copyIndex()].adminPasswordOrSSHKey]"
+                    },
+                    "vm-Size": {
+                        "value": "[parameters('vm-Array')[copyIndex()].Size]"
+                    },
+                    "vm-DiskArray": {
+                        "value": "[parameters('vm-Array')[copyIndex()].DiskArray]"
+                    },
+                    "vm-OSDiskType": {
+                        "value": "[parameters('vm-Array')[copyIndex()].OSDiskType]"
+                    },
+                    "vm-Project": {
+                        "value": "[parameters('vm-Array')[copyIndex()].Project]"
+                    },
+                    "vm-Function": {
+                        "value": "[parameters('vm-Array')[copyIndex()].Function]"
+                    },
+                    "vm-Increment": {
+                        "value": "[parameters('vm-Array')[copyIndex()].Increment]"
+                    },
+                    "vm-ReservedIP": {
+                        "value": "[parameters('vm-Array')[copyIndex()].ReservedIP]"
+                    },
+                    "vm-OS": {
+                        "value": "[parameters('vm-Array')[copyIndex()].OS]"
+                    },
+                    "vm-AppCode": {
+                        "value": "[parameters('vm-Array')[copyIndex()].AppCode]"
+                    },
+                    "vm-TypeCode": {
+                        "value": "[parameters('vm-Array')[copyIndex()].TypeCode]"
+                    },
+                    "vm-TypeEnv": {
+                        "value": "[parameters('vm-Array')[copyIndex()].TypeEnv]"
+                    },
+                    "avSet-PlatformUpdateDomainCount": {
+                        "value": "[parameters('avSet-PlatformUpdateDomainCount')]"
+                    },
+                    "avSet-PlatformFaultDomainCount": {
+                        "value": "[parameters('avSet-PlatformFaultDomainCount')]"
+                    },
+                    "vault-Name": {
+                        "value": "[parameters('vault-Name')]"
+                    },
+                    "vault-PolicyName": {
+                        "value": "[parameters('vault-PolicyName')]"
+                    },
+                    "vault-RGName": {
+                        "value": "[parameters('vault-RGName')]"
+                    },
+                    "workspace-Name": {
+                        "value": "[parameters('workspace-Name')]"
+                    },
+                    "workspace-SubId": {
+                        "value": "[parameters('workspace-SubId')]"
+                    },
+                    "workspace-ResourceGroup": {
+                        "value": "[parameters('workspace-ResourceGroup')]"
+                    },
+                    "vm-ADCodeDomain": {
+                        "value": "[parameters('vm-ADCodeDomain')]"
+                    },
+                    "vm-AutomationAccountName": {
+                        "value": "[parameters('vm-AutomationAccountName')]"
+                    },
+                    "vm-CustomScriptExtensionPath": {
+                        "value": "[parameters('vm-CustomScriptExtensionPath')]"
+                    },
+                    "vm-buAdminLocalPassword": {
+                        "value": "[parameters('vm-buAdminLocalPassword')]"
+                    },
+                    "vm-klAdminLocalPassword": {
+                        "value": "[parameters('vm-klAdminLocalPassword')]"
+                    },
+                    "vm-DomainAdminPassword": {
+                        "value": "[parameters('vm-DomainAdminPassword')]"
+                    },
+                    "vm-MonitoringAdminLocalPassword": {
+                        "value": "[parameters('vm-MonitoringAdminLocalPassword')]"
+                    },
+                    "country-Code": {
+                        "value": "[parameters('country-Code')]"
+                    },
+                    "sas-Token": {
+                        "value": "[parameters('sas-Token')]"
+                    },
+                    "sas-URI": {
+                        "value": "[parameters('sas-URI')]"
+                    },
+                    "vm-AvailabilityZone": {
+                        "value": "[parameters('vm-AvailabilityZone')]"
+                    },
+                    "vm-DSCEnabled": {
+                        "value": "[parameters('vm-DSCEnabled')]"
+                    },
+                    "vm-LinuxCustomScriptExtensionPath": {
+                        "value": "[parameters('vm-LinuxCustomScriptExtensionPath')]"
+                    }
+                }
+            }
+        }
+    ]
+}

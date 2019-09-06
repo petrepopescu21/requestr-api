@@ -1,0 +1,647 @@
+{
+
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "0.0.0.1",
+     "parameters": {
+         "utcValue" : {
+             "type": "string",
+             "metadata": {
+                "description" : "Used to generate a unique value for the deployment name"
+            },
+             "defaultValue": "[utcNow('yyyyMMddTHHmmssfff')]"
+         },
+         "vm-klAdminLocalPassword" :
+        {
+           "type":"securestring",
+           "metadata": {
+               "description" : "Password for Kaspersky Admin Local"
+           }
+        },
+         "vm-buAdminLocalPassword" :
+        {
+           "type":"securestring",
+           "metadata": {
+               "description" : "Password for BU Admin Local"
+           }
+        },
+        "vm-DomainAdminPassword" :
+        {
+           "type":"securestring",
+           "metadata": {
+               "description" : "Password for domain admin account"
+           }
+        },
+        "vm-MonitoringAdminLocalPassword" :
+        {
+            "type":"securestring",
+            "metadata": {
+                "description" : "Password for monitoring admin account"
+            }
+        },
+        "vm-LinuxCustomScriptExtensionPath" : {
+            "type": "string",
+            "metadata": {
+                "description" : "Path to Custom Script Extension file"
+            },
+            "defaultValue" : "https://euwesharedsvcstorage.blob.core.windows.net/scripts/Security_script_baseline_RHEL7.sh"
+        },
+         "vm-CustomScriptExtensionPath" : {
+            "type": "string",
+            "metadata": {
+                "description" : "Post-deployement script URL"
+            },
+            "defaultValue" : "https://euwesharedsvcstorage.blob.core.windows.net/scripts/WindowsPostDeploymentScript.ps1"
+        },
+         "vm-AutomationAccountName" : {
+            "type": "string",
+            "metadata": {
+                "description" : "Automation account for DSC configuration"
+            }
+        },
+         "entity-Code" : {
+             "type": "string",
+             "metadata": {
+                 "Description" : "Entity owning the VM"
+             }
+         },
+        "country-Code" : {
+             "type": "string",
+             "metadata": {
+                 "Description" : "Country code owning the VM"
+             }
+         }, 
+        "location":{
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "Description" : "Localisation"
+            }
+        },
+        "vm-diagStorageResourceGroup":{
+            "type": "string",
+                "metadata": {
+                 "Description" : "ResourceGroup name of Diagnosis Storage Account"   
+            }
+            
+        },
+        "vm-diagStorageName": {
+            "type": "string",
+            "metadata": {
+                "Description" : "Name of Diagnosis Storage Account"   
+           }
+        },
+        "vm-vNetResourceGroup" : {
+            "type": "string",
+            "metadata": {
+                "Description" : "VNet Resource Group"
+            }
+        },
+        "vm-vNetName" : {
+            "type": "string",
+            "metadata": {
+                "Description" : "VNet hosting the VM"
+            }   
+        },
+        "vm-SubnetName" : {
+            "type": "string",
+            "metadata": {
+                "description" : "Subnet hosting the VM"
+            }
+        },
+        
+        "vm-adminPasswordOrSSHKey" :
+        {
+            "type":"securestring",
+            "metadata": {
+                "description" : "VM Password or SSH Key"
+            }
+        },
+        "vm-Size" : {
+            "type": "string",
+            "metadata": {
+                "description" : "Azure Size of the VM"
+            },
+            "allowedValues": 
+            [
+                "Standard_B2s","Standard_B2ms","Standard_B4ms","Standard_B8ms",
+                "Standard_F2s_v2","Standard_F4s_v2","Standard_F8s_v2","Standard_F16s_v2",
+                "Standard_E2s_v3","Standard_E4s_v3","Standard_E8s_v3","Standard_E16s_v3",
+                "Standard_D2s_v3","Standard_D4s_v3","Standard_D8s_v3","Standard_D16s_v3",
+                "Standard_F2s","Standard_F4s","Standard_F8s","Standard_F16s"
+            ]
+        },
+        "vm-DiskArray" : {
+            "type": "array",
+            "metadata": {
+                "description" : "Array describing data disks"
+                
+            },
+            "defaultValue": [{"diskType" : "Standard_LRS" , "diskSize" : "128"}]
+        },
+        "vm-OS" : {
+            "type": "string",
+            "metadata": {
+                "description" : "VM Os"
+            },
+            "allowedValues": ["WS2012R2","WS2016","RedHat","SQLSRV2016SP2DEV","SQLSRV2016SP2STD","SQLSRV2016SP2ENT"]
+        },
+        "vm-OSDiskType" : 
+        {
+            "type": "string",
+            "metadata": {
+                "description" : "OS Disk Type"
+            },
+            "allowedValues": ["Standard_LRS","StandardSSD_LRS", "Premium_LRS", "UltraSSD_LRS"]
+        },
+        "vm-Project" : 
+        {
+            "type" : "string",
+            "metadata": {
+                "description" : "Project owning the VM "
+            }
+        },
+        "vm-Function" : 
+        {
+            "type": "string",
+            "metadata": {
+                "description" : "Vm Function (dc, web, app,...)"
+            }
+        },
+        "avSet-PlatformUpdateDomainCount" : 
+        {
+            "type": "string",
+            "metadata": {
+                "description" : "Update domain's number"
+            },
+            "defaultValue": "2"
+        },
+        "avSet-PlatformFaultDomainCount" : 
+        {
+            "type": "string",
+            "metadata": {
+                "description" : "Fault domain's number"
+            },
+            "defaultValue": "2"
+        },
+        "vault-Name": {
+            "type": "string",
+            "metadata": {
+                "description" : "Recovery Vault Name"
+            }
+        },
+        "vault-PolicyName": {
+            "type": "string",
+            "metadata": {
+                "description" : "Backup Policy Name"
+            },
+            "defaultValue": "VMDailyBackup"
+        },
+        "vault-RGName": {
+            "type": "string",
+            "metadata": {
+                "description" : "Recovery Vault Resource Group Name"
+            }
+        },
+        "workspace-Name": {
+            "type": "string",
+            "metadata": {
+                "Description" : "Log Analytics Workspace Name"   
+           }
+        },
+        "workspace-SubId": {
+            "type": "string",
+            "metadata": {
+                "Description" : "Log Analytics Workspace Subscription Id"   
+           }
+        },
+        "workspace-ResourceGroup": {
+            "type": "string",
+            "metadata": {
+                "Description" : "Log Analytics Workspace Resource Group"   
+           }
+        },
+        "vm-ADCodeDomain": {
+            "type": "string",
+            "metadata": {
+                "Description" : "Code for the AD Domain of the VM (w for workgroup)"   
+           }
+        },
+        "vm-AppCode": {
+            "type": "string",
+            "metadata": {
+                "Description" : "App Code or AD Site of the VM"   
+           }
+        },
+        "vm-TypeCode": {
+            "type": "string",
+            "metadata": {
+                "Description" : "Type Code of the VM (app, web, dc, rgw...)"  
+           }
+        },
+        "vm-TypeEnv": {
+            "type": "string",
+            "metadata": {
+                "Description" : "Environment Type of the VM (p for prod, d for dev...)"  
+           }
+        },
+        "vm-Increment": {
+            "type": "string",
+            "metadata": {
+                "Description" : "Increment depending on the existing VM"  
+           }
+        },
+        "vm-ReservedIP": {
+            "type": "string",
+            "metadata" : {
+                "Description" : "Indicates the IP address allocation method: dynamic or static"
+            },
+            "defaultValue": "dynamic"
+        },
+        "sas-Token" : {
+            "type": "string",
+            "metadata": {
+                "Description" : "SAS Token for access to Nested templates"
+            }
+        },
+        "sas-URI" : {
+            "type": "string",
+            "metadata": {
+                "Description" : "SAS URI for access to Nested templates"
+            }
+        },
+        "vm-AvailabilityZone" : {
+            "type": "string",
+            "metadata": {
+                "Description" : "Availability Zone Number (0 if no AZ is required)"
+            },
+            "allowedValues": ["0","1","2","3"],
+            "DefaultValue" : "0"
+        },
+       "vm-DSCEnabled" : {
+           "type": "string",
+           "metadata": {
+               "Description" : "Create DSC extension for hardening"
+           },
+           "DefaultValue" : "yes"
+       }
+        
+    },
+    "variables": {
+    
+            },
+    "resources": 
+    [
+
+        {
+            "condition": "[equals(parameters('vm-Os'), 'WS2012R2')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2017-05-10",
+            "comments": "WS 2012 R2 VM Deployment",
+            "name" : "[concat('vmDeployment-WS2012R2', uniqueString(parameters('utcValue')))]",
+            "properties":
+            {
+                "mode" : "Incremental",
+                "templateLink" : 
+                {
+                    "uri" : "[concat(uri(parameters('sas-URI'),concat('/templates/',resourceGroup().name,'/VM-Windows-nested.json')),parameters('sas-Token'))]"
+                    
+                },
+                "parameters" :
+                {
+                    "vm-Publisher" : {"value" : "MicrosoftWindowsServer"},
+                    "vm-Offer" : {"value": "WindowsServer"},
+                    "vm-Sku" : {"value": "2012-R2-Datacenter"},
+                    "vm-Version" : {"value": "Latest"},
+                    "entity-Code" : {"value" : "[parameters('entity-Code')]"},
+                    "location" : {"value" : "[parameters('location')]"},
+                    "vm-diagStorageName" : {"value" : "[parameters('vm-diagStorageName')]"},
+                    "vm-diagStorageResourceGroup" : {"value" : "[parameters('vm-diagStorageResourceGroup')]"},
+                    "vm-vNetResourceGroup" : {"value" : "[parameters('vm-vNetResourceGroup')]"},
+                    "vm-vNetName" : {"value" : "[parameters('vm-vNetName')]"},
+                    "vm-SubnetName" : {"value" : "[parameters('vm-SubnetName')]"},
+                    "vm-adminPassword" : {"value" : "[parameters('vm-adminPasswordOrSSHKey')]"},
+                    "vm-Size" : {"value" : "[parameters('vm-Size')]"},
+                    "vm-DiskArray" : {"value" : "[parameters('vm-DiskArray')]"},
+                    "vm-OSDiskType" : {"value" : "[parameters('vm-OSDiskType')]"},
+                    "vm-Project" : {"value" : "[parameters('vm-Project')]"},
+                    "vm-Function" : {"value" : "[parameters('vm-Function')]"},
+                    "avSet-PlatformUpdateDomainCount" : {"value" : "[parameters('avSet-PlatformUpdateDomainCount')]"},
+                    "avSet-PlatformFaultDomainCount" : {"value" : "[parameters('avSet-PlatformFaultDomainCount')]"},
+                    "vault-Name" : {"value" : "[parameters('vault-Name')]"},
+                    "vault-PolicyName" : {"value" : "[parameters('vault-PolicyName')]"},
+                    "vault-RGName" : {"value" : "[parameters('vault-RGName')]"},
+                    "workspace-Name" : {"value" : "[parameters('workspace-Name')]"},   
+                    "workspace-SubId" : {"value" : "[parameters('workspace-SubId')]"},   
+                    "workspace-ResourceGroup" : {"value" : "[parameters('workspace-ResourceGroup')]"},   
+                    "vm-ADCodeDomain" : {"value" : "[parameters('vm-ADCodeDomain')]"},   
+                    "vm-AppCode" : {"value" : "[parameters('vm-AppCode')]"},   
+                    "vm-TypeCode" : {"value" : "[parameters('vm-TypeCode')]"},
+                    "vm-TypeEnv" : {"value" : "[parameters('vm-TypeEnv')]"},
+                    "vm-Increment" : {"value" : "[parameters('vm-Increment')]"},
+                    "vm-ReservedIP" : {"value" : "[parameters('vm-ReservedIP')]"},
+                    "vm-AutomationAccountName" : {"value" : "[parameters('vm-AutomationAccountName')]"},
+                    "vm-CustomScriptExtensionPath" : {"value" : "[parameters('vm-CustomScriptExtensionPath')]"},
+                    "vm-buAdminLocalPassword" : {"value" : "[parameters('vm-buAdminLocalPassword')]"},
+                    "vm-klAdminLocalPassword" : {"value" : "[parameters('vm-klAdminLocalPassword')]"},
+                    "vm-DomainAdminPassword" : {"value" : "[parameters('vm-DomainAdminPassword')]"},
+                    "vm-MonitoringAdminLocalPassword" : {"value" : "[parameters('vm-MonitoringAdminLocalPassword')]"},                   
+                    "country-Code" : {"value" : "[parameters('country-Code')]"},
+                    "sas-Token" : {"value" : "[parameters('sas-Token')]"},
+                    "sas-URI" : {"value" : "[parameters('sas-URI')]"},
+                    "vm-AvailabilityZone" : {"value" : "[parameters('vm-AvailabilityZone')]"},
+                    "vm-DSCEnabled" : {"value" : "[parameters('vm-DSCEnabled')]"}
+                }
+            }
+        },
+        
+        {
+            "condition": "[equals(parameters('vm-Os'), 'WS2016')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2017-05-10",
+            "comments": "WS 2016 VM Deployment",
+            "name" : "[concat('vmDeployment-WS2016', uniqueString(parameters('utcValue')))]",
+            "properties":{
+                "mode" : "Incremental",
+                "templateLink" : 
+                {
+                    "uri" : "[concat(uri(parameters('sas-URI'),concat('/templates/',resourceGroup().name,'/VM-Windows-nested.json')),parameters('sas-Token'))]"
+                },
+                "parameters" :
+                {
+                    "vm-Publisher" : {"value" : "MicrosoftWindowsServer"},
+                    "vm-Offer" : {"value": "WindowsServer"},
+                    "vm-Sku" : {"value": "2016-Datacenter"},
+                    "vm-Version" : {"value": "Latest"},
+                    "entity-Code" : {"value" : "[parameters('entity-Code')]"},
+                    "location" : {"value" : "[parameters('location')]"},
+                    "vm-diagStorageName" : {"value" : "[parameters('vm-diagStorageName')]"},
+                    "vm-diagStorageResourceGroup" : {"value" : "[parameters('vm-diagStorageResourceGroup')]"},
+                    "vm-vNetResourceGroup" : {"value" : "[parameters('vm-vNetResourceGroup')]"},
+                    "vm-vNetName" : {"value" : "[parameters('vm-vNetName')]"},
+                    "vm-SubnetName" : {"value" : "[parameters('vm-SubnetName')]"},
+                    "vm-adminPassword" : {"value" : "[parameters('vm-adminPasswordOrSSHKey')]"},
+                    "vm-Size" : {"value" : "[parameters('vm-Size')]"},
+                    "vm-DiskArray" : {"value" : "[parameters('vm-DiskArray')]"},
+                    "vm-OSDiskType" : {"value" : "[parameters('vm-OSDiskType')]"},
+                    "vm-Project" : {"value" : "[parameters('vm-Project')]"},
+                    "vm-Function" : {"value" : "[parameters('vm-Function')]"},
+                    "avSet-PlatformUpdateDomainCount" : {"value" : "[parameters('avSet-PlatformUpdateDomainCount')]"},
+                    "avSet-PlatformFaultDomainCount" : {"value" : "[parameters('avSet-PlatformFaultDomainCount')]"},
+                    "vault-Name" : {"value" : "[parameters('vault-Name')]"},
+                    "vault-PolicyName" : {"value" : "[parameters('vault-PolicyName')]"},
+                    "vault-RGName" : {"value" : "[parameters('vault-RGName')]"},
+                    "workspace-Name" : {"value" : "[parameters('workspace-Name')]"},   
+                    "workspace-SubId" : {"value" : "[parameters('workspace-SubId')]"},   
+                    "workspace-ResourceGroup" : {"value" : "[parameters('workspace-ResourceGroup')]"},   
+                    "vm-ADCodeDomain" : {"value" : "[parameters('vm-ADCodeDomain')]"},   
+                    "vm-AppCode" : {"value" : "[parameters('vm-AppCode')]"},   
+                    "vm-TypeCode" : {"value" : "[parameters('vm-TypeCode')]"},
+                    "vm-TypeEnv" : {"value" : "[parameters('vm-TypeEnv')]"},
+                    "vm-Increment" : {"value" : "[parameters('vm-Increment')]"},
+                    "vm-ReservedIP" : {"value" : "[parameters('vm-ReservedIP')]"},
+                    "vm-AutomationAccountName" : {"value" : "[parameters('vm-AutomationAccountName')]"},
+                    "vm-CustomScriptExtensionPath" : {"value" : "[parameters('vm-CustomScriptExtensionPath')]"},
+                    "vm-buAdminLocalPassword" : {"value" : "[parameters('vm-buAdminLocalPassword')]"},
+                    "vm-klAdminLocalPassword" : {"value" : "[parameters('vm-klAdminLocalPassword')]"},
+                    "vm-DomainAdminPassword" : {"value" : "[parameters('vm-DomainAdminPassword')]"},
+                    "vm-MonitoringAdminLocalPassword" : {"value" : "[parameters('vm-MonitoringAdminLocalPassword')]"},
+                    "country-Code" : {"value" : "[parameters('country-Code')]"},
+                    "sas-Token" : {"value" : "[parameters('sas-Token')]"},
+                    "sas-URI" : {"value" : "[parameters('sas-URI')]"},
+                    "vm-AvailabilityZone" : {"value" : "[parameters('vm-AvailabilityZone')]"},
+                    "vm-DSCEnabled" : {"value" : "[parameters('vm-DSCEnabled')]"}
+                }
+            }
+        },
+        {
+            "condition": "[equals(parameters('vm-Os'), 'SQLSRV2016SP2DEV')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2017-05-10",
+            "comments": "SQL Server 2016 SP2 Developer VM Deployment",
+            "name" : "[concat('vmDeployment-SQLSRV2016SP2DEV', uniqueString(parameters('utcValue')))]",
+            "properties":{
+                "mode" : "Incremental",
+                "templateLink" : 
+                {
+                    "uri" : "[concat(uri(parameters('sas-URI'),concat('/templates/',resourceGroup().name,'/VM-Windows-nested.json')),parameters('sas-Token'))]"                  
+                },
+                "parameters" :
+                {
+                    "vm-Publisher" : {"value" : "MicrosoftSQLServer"},
+                    "vm-Offer" : {"value": "SQL2016SP2-WS2016"},
+                    "vm-Sku" : {"value": "SQLDEV"},
+                    "vm-Version" : {"value": "Latest"},
+                    "entity-Code" : {"value" : "[parameters('entity-Code')]"},
+                    "location" : {"value" : "[parameters('location')]"},
+                    "vm-diagStorageName" : {"value" : "[parameters('vm-diagStorageName')]"},
+                    "vm-diagStorageResourceGroup" : {"value" : "[parameters('vm-diagStorageResourceGroup')]"},
+                    "vm-vNetResourceGroup" : {"value" : "[parameters('vm-vNetResourceGroup')]"},
+                    "vm-vNetName" : {"value" : "[parameters('vm-vNetName')]"},
+                    "vm-SubnetName" : {"value" : "[parameters('vm-SubnetName')]"},
+                    "vm-adminPassword" : {"value" : "[parameters('vm-adminPasswordOrSSHKey')]"},
+                    "vm-Size" : {"value" : "[parameters('vm-Size')]"},
+                    "vm-DiskArray" : {"value" : "[parameters('vm-DiskArray')]"},
+                    "vm-OSDiskType" : {"value" : "[parameters('vm-OSDiskType')]"},
+                    "vm-Project" : {"value" : "[parameters('vm-Project')]"},
+                    "vm-Function" : {"value" : "[parameters('vm-Function')]"},
+                    "avSet-PlatformUpdateDomainCount" : {"value" : "[parameters('avSet-PlatformUpdateDomainCount')]"},
+                    "avSet-PlatformFaultDomainCount" : {"value" : "[parameters('avSet-PlatformFaultDomainCount')]"},
+                    "vault-Name" : {"value" : "[parameters('vault-Name')]"},
+                    "vault-PolicyName" : {"value" : "[parameters('vault-PolicyName')]"},
+                    "vault-RGName" : {"value" : "[parameters('vault-RGName')]"},
+                    "workspace-Name" : {"value" : "[parameters('workspace-Name')]"},   
+                    "workspace-SubId" : {"value" : "[parameters('workspace-SubId')]"},   
+                    "workspace-ResourceGroup" : {"value" : "[parameters('workspace-ResourceGroup')]"},   
+                    "vm-ADCodeDomain" : {"value" : "[parameters('vm-ADCodeDomain')]"},   
+                    "vm-AppCode" : {"value" : "[parameters('vm-AppCode')]"},   
+                    "vm-TypeCode" : {"value" : "[parameters('vm-TypeCode')]"},
+                    "vm-TypeEnv" : {"value" : "[parameters('vm-TypeEnv')]"},
+                    "vm-Increment" : {"value" : "[parameters('vm-Increment')]"},
+                    "vm-ReservedIP" : {"value" : "[parameters('vm-ReservedIP')]"},
+                    "vm-AutomationAccountName" : {"value" : "[parameters('vm-AutomationAccountName')]"},
+                    "vm-CustomScriptExtensionPath" : {"value" : "[parameters('vm-CustomScriptExtensionPath')]"},
+                    "vm-buAdminLocalPassword" : {"value" : "[parameters('vm-buAdminLocalPassword')]"},
+                    "vm-klAdminLocalPassword" : {"value" : "[parameters('vm-klAdminLocalPassword')]"},
+                    "vm-DomainAdminPassword" : {"value" : "[parameters('vm-DomainAdminPassword')]"},
+                    "vm-MonitoringAdminLocalPassword" : {"value" : "[parameters('vm-MonitoringAdminLocalPassword')]"},
+                    "country-Code" : {"value" : "[parameters('country-Code')]"},
+                    "sas-Token" : {"value" : "[parameters('sas-Token')]"},
+                    "sas-URI" : {"value" : "[parameters('sas-URI')]"},
+                    "vm-AvailabilityZone" : {"value" : "[parameters('vm-AvailabilityZone')]"},
+                    "vm-DSCEnabled" : {"value" : "[parameters('vm-DSCEnabled')]"}
+                }
+            }
+        },
+        {
+            "condition": "[equals(parameters('vm-Os'), 'SQLSRV2016SP2STD')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2017-05-10",
+            "comments": "SQL Server 2016 SP2 Standard VM Deployment",
+            "name" : "[concat('vmDeployment-SQLSRV2016SP2STD', uniqueString(parameters('utcValue')))]",
+            "properties":{
+                "mode" : "Incremental",
+                "templateLink" : 
+                {
+                    "uri" : "[concat(uri(parameters('sas-URI'),concat('/templates/',resourceGroup().name,'/VM-Windows-nested.json')),parameters('sas-Token'))]"
+                },
+                "parameters" :
+                {
+                    "vm-Publisher" : {"value" : "MicrosoftSQLServer"},
+                    "vm-Offer" : {"value": "SQL2016SP2-WS2016"},
+                    "vm-Sku" : {"value": "Standard"},
+                    "vm-Version" : {"value": "Latest"},
+                    "entity-Code" : {"value" : "[parameters('entity-Code')]"},
+                    "location" : {"value" : "[parameters('location')]"},
+                    "vm-diagStorageName" : {"value" : "[parameters('vm-diagStorageName')]"},
+                    "vm-diagStorageResourceGroup" : {"value" : "[parameters('vm-diagStorageResourceGroup')]"},
+                    "vm-vNetResourceGroup" : {"value" : "[parameters('vm-vNetResourceGroup')]"},
+                    "vm-vNetName" : {"value" : "[parameters('vm-vNetName')]"},
+                    "vm-SubnetName" : {"value" : "[parameters('vm-SubnetName')]"},
+                    "vm-adminPassword" : {"value" : "[parameters('vm-adminPasswordOrSSHKey')]"},
+                    "vm-Size" : {"value" : "[parameters('vm-Size')]"},
+                    "vm-DiskArray" : {"value" : "[parameters('vm-DiskArray')]"},
+                    "vm-OSDiskType" : {"value" : "[parameters('vm-OSDiskType')]"},
+                    "vm-Project" : {"value" : "[parameters('vm-Project')]"},
+                    "vm-Function" : {"value" : "[parameters('vm-Function')]"},
+                    "avSet-PlatformUpdateDomainCount" : {"value" : "[parameters('avSet-PlatformUpdateDomainCount')]"},
+                    "avSet-PlatformFaultDomainCount" : {"value" : "[parameters('avSet-PlatformFaultDomainCount')]"},
+                    "vault-Name" : {"value" : "[parameters('vault-Name')]"},
+                    "vault-PolicyName" : {"value" : "[parameters('vault-PolicyName')]"},
+                    "vault-RGName" : {"value" : "[parameters('vault-RGName')]"},
+                    "workspace-Name" : {"value" : "[parameters('workspace-Name')]"},   
+                    "workspace-SubId" : {"value" : "[parameters('workspace-SubId')]"},   
+                    "workspace-ResourceGroup" : {"value" : "[parameters('workspace-ResourceGroup')]"},   
+                    "vm-ADCodeDomain" : {"value" : "[parameters('vm-ADCodeDomain')]"},   
+                    "vm-AppCode" : {"value" : "[parameters('vm-AppCode')]"},   
+                    "vm-TypeCode" : {"value" : "[parameters('vm-TypeCode')]"},
+                    "vm-TypeEnv" : {"value" : "[parameters('vm-TypeEnv')]"},
+                    "vm-Increment" : {"value" : "[parameters('vm-Increment')]"},
+                    "vm-ReservedIP" : {"value" : "[parameters('vm-ReservedIP')]"},
+                    "vm-AutomationAccountName" : {"value" : "[parameters('vm-AutomationAccountName')]"},
+                    "vm-CustomScriptExtensionPath" : {"value" : "[parameters('vm-CustomScriptExtensionPath')]"},
+                    "vm-buAdminLocalPassword" : {"value" : "[parameters('vm-buAdminLocalPassword')]"},
+                    "vm-klAdminLocalPassword" : {"value" : "[parameters('vm-klAdminLocalPassword')]"},
+                    "vm-DomainAdminPassword" : {"value" : "[parameters('vm-DomainAdminPassword')]"},
+                    "vm-MonitoringAdminLocalPassword" : {"value" : "[parameters('vm-MonitoringAdminLocalPassword')]"},
+                    "country-Code" : {"value" : "[parameters('country-Code')]"},
+                    "sas-Token" : {"value" : "[parameters('sas-Token')]"},
+                    "sas-URI" : {"value" : "[parameters('sas-URI')]"},
+                    "vm-AvailabilityZone" : {"value" : "[parameters('vm-AvailabilityZone')]"},
+                    "vm-DSCEnabled" : {"value" : "[parameters('vm-DSCEnabled')]"}
+                }
+            }
+        },
+        {
+            "condition": "[equals(parameters('vm-Os'), 'SQLSRV2016SP2ENT')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2017-05-10",
+            "comments": "SQL Server 2016 SP2 Enterprise VM Deployment",
+            "name" : "[concat('vmDeployment-SQLSRV2016SP2ENT', uniqueString(parameters('utcValue')))]",
+            "properties":{
+                "mode" : "Incremental",
+                "templateLink" : 
+                {
+                    "uri" : "[concat(uri(parameters('sas-URI'),concat('/templates/',resourceGroup().name,'/VM-Windows-nested.json')),parameters('sas-Token'))]"
+                },
+                "parameters" :
+                {
+                    "vm-Publisher" : {"value" : "MicrosoftSQLServer"},
+                    "vm-Offer" : {"value": "SQL2016SP2-WS2016"},
+                    "vm-Sku" : {"value": "Enterprise"},
+                    "vm-Version" : {"value": "Latest"},
+                    "entity-Code" : {"value" : "[parameters('entity-Code')]"},
+                    "location" : {"value" : "[parameters('location')]"},
+                    "vm-diagStorageName" : {"value" : "[parameters('vm-diagStorageName')]"},
+                    "vm-diagStorageResourceGroup" : {"value" : "[parameters('vm-diagStorageResourceGroup')]"},
+                    "vm-vNetResourceGroup" : {"value" : "[parameters('vm-vNetResourceGroup')]"},
+                    "vm-vNetName" : {"value" : "[parameters('vm-vNetName')]"},
+                    "vm-SubnetName" : {"value" : "[parameters('vm-SubnetName')]"},
+                    "vm-adminPassword" : {"value" : "[parameters('vm-adminPasswordOrSSHKey')]"},
+                    "vm-Size" : {"value" : "[parameters('vm-Size')]"},
+                    "vm-DiskArray" : {"value" : "[parameters('vm-DiskArray')]"},
+                    "vm-OSDiskType" : {"value" : "[parameters('vm-OSDiskType')]"},
+                    "vm-Project" : {"value" : "[parameters('vm-Project')]"},
+                    "vm-Function" : {"value" : "[parameters('vm-Function')]"},
+                    "avSet-PlatformUpdateDomainCount" : {"value" : "[parameters('avSet-PlatformUpdateDomainCount')]"},
+                    "avSet-PlatformFaultDomainCount" : {"value" : "[parameters('avSet-PlatformFaultDomainCount')]"},
+                    "vault-Name" : {"value" : "[parameters('vault-Name')]"},
+                    "vault-PolicyName" : {"value" : "[parameters('vault-PolicyName')]"},
+                    "vault-RGName" : {"value" : "[parameters('vault-RGName')]"},
+                    "workspace-Name" : {"value" : "[parameters('workspace-Name')]"},   
+                    "workspace-SubId" : {"value" : "[parameters('workspace-SubId')]"},   
+                    "workspace-ResourceGroup" : {"value" : "[parameters('workspace-ResourceGroup')]"},   
+                    "vm-ADCodeDomain" : {"value" : "[parameters('vm-ADCodeDomain')]"},   
+                    "vm-AppCode" : {"value" : "[parameters('vm-AppCode')]"},   
+                    "vm-TypeCode" : {"value" : "[parameters('vm-TypeCode')]"},
+                    "vm-TypeEnv" : {"value" : "[parameters('vm-TypeEnv')]"},
+                    "vm-Increment" : {"value" : "[parameters('vm-Increment')]"},
+                    "vm-ReservedIP" : {"value" : "[parameters('vm-ReservedIP')]"},
+                    "vm-AutomationAccountName" : {"value" : "[parameters('vm-AutomationAccountName')]"},
+                    "vm-CustomScriptExtensionPath" : {"value" : "[parameters('vm-CustomScriptExtensionPath')]"},
+                    "vm-buAdminLocalPassword" : {"value" : "[parameters('vm-buAdminLocalPassword')]"},
+                    "vm-klAdminLocalPassword" : {"value" : "[parameters('vm-klAdminLocalPassword')]"},
+                    "vm-DomainAdminPassword" : {"value" : "[parameters('vm-DomainAdminPassword')]"},
+                    "vm-MonitoringAdminLocalPassword" : {"value" : "[parameters('vm-MonitoringAdminLocalPassword')]"},
+                    "country-Code" : {"value" : "[parameters('country-Code')]"},
+                    "sas-Token" : {"value" : "[parameters('sas-Token')]"},
+                    "sas-URI" : {"value" : "[parameters('sas-URI')]"},
+                    "vm-AvailabilityZone" : {"value" : "[parameters('vm-AvailabilityZone')]"},
+                    "vm-DSCEnabled" : {"value" : "[parameters('vm-DSCEnabled')]"}
+                }
+            }
+        },
+        
+        {
+            "condition": "[equals(parameters('vm-Os'), 'RedHat')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2017-05-10",
+            "comments": "RedHat VM Deployment",
+            "name" : "[concat('vmDeployment-RedHat7', uniqueString(parameters('utcValue')))]",
+            "properties":{
+                "mode" : "Incremental",
+                "templateLink" : 
+                {
+                    "uri" : "[concat(uri(parameters('sas-URI'),concat('/templates/',resourceGroup().name,'/VM-Linux-nested.json')),parameters('sas-Token'))]"
+                },
+                "parameters" :
+                {
+                    "vm-LinuxCustomScriptExtensionPath" : {"value" : "[parameters('vm-LinuxCustomScriptExtensionPath')]"},
+                    "vm-Publisher" : {"value" : "RedHat"},
+                    "vm-Offer" : {"value": "RHEL"},
+                    "vm-Sku" : {"value": "7-LVM"},
+                    "vm-Version" : {"value": "Latest"},
+                    "entity-Code" : {"value" : "[parameters('entity-Code')]"},
+                    "location" : {"value" : "[parameters('location')]"},
+                    "vm-diagStorageName" : {"value" : "[parameters('vm-diagStorageName')]"},
+                    "vm-diagStorageResourceGroup" : {"value" : "[parameters('vm-diagStorageResourceGroup')]"},
+                    "vm-vNetResourceGroup" : {"value" : "[parameters('vm-vNetResourceGroup')]"},
+                    "vm-vNetName" : {"value" : "[parameters('vm-vNetName')]"},
+                    "vm-SubnetName" : {"value" : "[parameters('vm-SubnetName')]"},
+                    "vm-adminSSHKey" : {"value" : "[parameters('vm-adminPasswordOrSSHKey')]"},
+                    "vm-Size" : {"value" : "[parameters('vm-Size')]"},
+                    "vm-DiskArray" : {"value" : "[parameters('vm-DiskArray')]"},
+                    "vm-OSDiskType" : {"value" : "[parameters('vm-OSDiskType')]"},
+                    "vm-Project" : {"value" : "[parameters('vm-Project')]"},
+                    "vm-Function" : {"value" : "[parameters('vm-Function')]"},
+                    "avSet-PlatformUpdateDomainCount" : {"value" : "[parameters('avSet-PlatformUpdateDomainCount')]"},
+                    "avSet-PlatformFaultDomainCount" : {"value" : "[parameters('avSet-PlatformFaultDomainCount')]"},
+                    "vault-Name" : {"value" : "[parameters('vault-Name')]"},
+                    "vault-PolicyName" : {"value" : "[parameters('vault-PolicyName')]"},
+                    "vault-RGName" : {"value" : "[parameters('vault-RGName')]"},
+                    "workspace-Name" : {"value" : "[parameters('workspace-Name')]"},   
+                    "workspace-SubId" : {"value" : "[parameters('workspace-SubId')]"},   
+                    "workspace-ResourceGroup" : {"value" : "[parameters('workspace-ResourceGroup')]"},   
+                    "vm-ADCodeDomain" : {"value" : "[parameters('vm-ADCodeDomain')]"},   
+                    "vm-AppCode" : {"value" : "[parameters('vm-AppCode')]"},   
+                    "vm-TypeCode" : {"value" : "[parameters('vm-TypeCode')]"},
+                    "vm-TypeEnv" : {"value" : "[parameters('vm-TypeEnv')]"},
+                    "vm-Increment" : {"value" : "[parameters('vm-Increment')]"},
+                    "vm-ReservedIP" : {"value" : "[parameters('vm-ReservedIP')]"},
+                    "sas-Token" : {"value" : "[parameters('sas-Token')]"},
+                    "sas-URI" : {"value" : "[parameters('sas-URI')]"},
+                    "vm-AvailabilityZone" : {"value" : "[parameters('vm-AvailabilityZone')]"}
+                }
+            }
+        }
+    ]
+}
