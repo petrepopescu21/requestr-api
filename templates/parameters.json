@@ -1,0 +1,39 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "0.0.0.1",
+    "parameters": {
+        "vm-Project": {
+            "value": "ITECApps"
+        },
+        "vm-AppName": {
+            "value": "Requestr"
+        },
+        "vm-TypeEnv": {
+            "value": "d"
+        },
+        "vm-Array": {
+            "value": [
+                {
+                    "Function": "webapi",
+                    "Appcode": "RQST",
+                    "SubnetCode": "web",
+                    "Adcodedomain": null,
+                    "Typecode": "web",
+                    "Os": "WS2016",
+                    "OsDiskType": "Standard_LRS",
+                    "Size": "Standard_B2s",
+                    "DiskArray": [
+                        {
+                            "size": 256,
+                            "type": "Standard_LRS"
+                        }
+                    ],
+                    "AdCodeDomain": "w",
+                    "Increment": "01",
+                    "adminPasswordOrSSHKey": "asd!@#ddssca",
+                    "ReservedIp": "static"
+                }
+            ]
+        }
+    }
+}
