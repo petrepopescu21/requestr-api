@@ -24,30 +24,43 @@ function getB64(str) {
 }
 
 module.exports = class DevOpsClient {
-    constructor(spokeName, hubName, scendpoint="/serviceendpoint/endpoints?api-version=5.1-preview.2") {
+    constructor(spokeName, scendpoint = "/serviceendpoint/endpoints?api-version=5.1-preview.2") {
         this.project = project
         this.scendpoint = scendpoint
         this.spokeName = spokeName
-        this.hubName = hubName
         this.devopsConnection = connection
         this.customClient = cclient
     }
 
+    // constructor(spokeName, hubName, scendpoint = "/serviceendpoint/endpoints?api-version=5.1-preview.2") {
+    //     this.project = project
+    //     this.scendpoint = scendpoint
+    //     this.spokeName = spokeName
+    //     this.hubName = hubName
+    //     this.devopsConnection = connection
+    //     this.customClient = cclient
+    // }
+
     async getServiceConnections(spoke = this.spokeName, hub = this.hubName) {
         let sc = await this._getServiceConnectionIDBySubscriptionName(spoke)
-        let hc = await this._getServiceConnectionIDBySubscriptionName(hub)
-        return {
-            spoke: sc,
-            hub: hc
+        if (hub !== undefined) {
+            let hc = await this._getServiceConnectionIDBySubscriptionName(hub)
+            return {
+                spoke: sc,
+                hub: hc
+            }
+        }
+        else return {
+            spoke: sc
         }
     }
 
     async getVariableGroups(spoke = this.spokeName, hub = this.hubName) {
         let sv = await this._getVariableGroupIDBySubscriptionName(spoke)
-        let hv = await this._getVariableGroupIDBySubscriptionName(hub)
+        // let hv = await this._getVariableGroupIDBySubscriptionName(hub)
         return {
-            spoke: sv,
-            hub: hv
+            spoke: sv
+            // hub: hv
         }
     }
 
@@ -67,17 +80,17 @@ module.exports = class DevOpsClient {
             console.log(e)
         }
     }
-    
+
     async _getVariableGroupIDBySubscriptionName(subName) {
         try {
             let ta = await this.devopsConnection.getTaskAgentApi()
             let groups = await ta.getVariableGroups(this.project.name)
-            let group = groups.filter(g=>{
-                return g.name.indexOf(subName)>-1
+            let group = groups.filter(g => {
+                return g.name.indexOf(subName) > -1
             })
             return group[0].id
         }
-        catch(e) {
+        catch (e) {
             console.log(e)
         }
     }

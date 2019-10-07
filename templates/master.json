@@ -2,6 +2,12 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "0.0.0.1",
     "parameters": {
+        "vm-Project": {
+            "type": "string"
+        },
+        "vm-TypeEnv": {
+            "type": "string"
+        },
         "vm-Array": {
             "type": "object",
             "metadata": {
@@ -251,7 +257,7 @@
                         "value": "[parameters('vm-Array')[copyIndex()].OSDiskType]"
                     },
                     "vm-Project": {
-                        "value": "[parameters('vm-Array')[copyIndex()].Project]"
+                        "value": "[parameters('vm-Project')]"
                     },
                     "vm-Function": {
                         "value": "[parameters('vm-Array')[copyIndex()].Function]"
@@ -272,7 +278,7 @@
                         "value": "[parameters('vm-Array')[copyIndex()].TypeCode]"
                     },
                     "vm-TypeEnv": {
-                        "value": "[parameters('vm-Array')[copyIndex()].TypeEnv]"
+                        "value": "[parameters('vm-TypeEnv')]"
                     },
                     "avSet-PlatformUpdateDomainCount": {
                         "value": "[parameters('avSet-PlatformUpdateDomainCount')]"
